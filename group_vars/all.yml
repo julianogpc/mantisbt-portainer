@@ -1,0 +1,7 @@
+docker_compose_version: 1.24.0
+docker_compose_arch: Linux-x86_64
+docker_user: vagrant
+docker_group: docker
+docker_data_dir: /data
+docker_service_dir: /etc/systemd/system/docker.service.d
+docker_service_options: options.conf

@@ -1,0 +1,16 @@
+---
+  - name: Copy docker-compose.yml
+    copy:
+      src: docker-compose.yml
+      dest: /tmp/docker-compose.yml
+      owner: vagrant
+      group: vagrant
+      mode: 0644
+
+  - name: Deploy 'docker-compose.yml' Stack
+    shell: docker stack deploy --compose-file=/tmp/docker-compose.yml desafiobase2
+
+  - name: Delete file /tmp/docker-compose.yml
+    file:
+      path: /tmp/docker-compose.yml
+      state: absent

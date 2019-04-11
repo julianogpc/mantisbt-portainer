@@ -1,0 +1,59 @@
+---
+  - name: Create Directory {{ docker_service_dir }}
+    file: 
+      path: "{{ docker_service_dir }}"
+      state: directory
+      owner: root
+      group: root
+      mode: 0755
+
+  - name: Create File "{{ docker_service_dir }}/{{ docker_service_options }}"
+    file: 
+      path: "{{ docker_service_dir }}/{{ docker_service_options }}"
+      state: touch
+      owner: root
+      group: root
+      mode: 0644
+  
+  - name: Get dockerd Path
+    shell: which dockerd
+    register: dockerd_result
+
+  - name: Configure Service
+    blockinfile:
+      dest: "{{ docker_service_dir }}/{{ docker_service_options }}"
+      block: |
+        [Service]
+        ExecStart=
+        ExecStart={{ dockerd_result.stdout }} -H unix:// -H tcp://0.0.0.0:2375
+
+  - name: Restart Service docker
+    systemd:
+      state: restarted
+      daemon_reload: yes
+      name: docker
+
+  - name: Portainer Container
+    docker_container:
+      name: portainer
+      image: portainer/portainer
+      hostname: portainer
+      state: started
+      recreate: "no"
+      restart_policy: always
+      pull: "no"
+      ports:
+        - "9000:9000"
+      volumes:
+        - "portainer_data:/data"
+        - "/var/run/docker.sock:/var/run/docker.sock"
+
+  - name: Set public_ip from ip_range
+    set_fact:
+      public_ip: "{{ ansible_all_ipv4_addresses | select('match', ip_range) | list | first }}"
+    when: ip_range is defined
+
+  - name: Init a new swarm with default parameters
+    docker_swarm:
+      state: present
+      advertise_addr: "{{ public_ip }}"

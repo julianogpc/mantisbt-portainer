@@ -1,0 +1,66 @@
+version: '3'
+services:
+  mariadb:
+    image: 'bitnami/mariadb:latest'
+    hostname: mariadb
+    environment:
+      - MARIADB_USER=mantisbt
+      - MARIADB_PASSWORD=mantisbt
+      - MARIADB_DATABASE=bugtracker
+      - MARIADB_ROOT_USER=root
+      - MARIADB_ROOT_PASSWORD=root
+      - ALLOW_EMPTY_PASSWORD=no
+    ports:
+      - '3306:3306'
+    volumes:
+      - 'mariadb_data:/bitnami'
+    healthcheck:
+      test: ["CMD", "mysqladmin", "-u", "$MARIADB_ROOT_USER", "-p$MARIADB_ROOT_PASSWORD", "ping"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+        limits:
+          cpus: '0.50'
+          memory: 256M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+        
+  mantisbt:
+    image: 'registry.gitlab.com/julianogpc/mantisbt-portainer:2.19'
+    hostname: mantisbt
+    ports:
+      - '80:80'
+    volumes:
+      - 'mantisbt_data:/var/www/html'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        reservations:
+          cpus: '.25'
+          memory: 128M
+        limits:
+          cpus: '0.50'
+          memory: 256M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
+volumes:
+  mariadb_data:
+    driver: local
+  mantisbt_data:
+    driver: local
