@@ -5,3 +5,5 @@ docker_group: docker
 docker_data_dir: /data
 docker_service_dir: /etc/systemd/system/docker.service.d
 docker_service_options: options.conf
+gf_security_admin_password: admin
+gf_users_allow_sign_up: False

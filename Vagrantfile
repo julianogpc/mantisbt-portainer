@@ -44,7 +44,9 @@ Vagrant.configure(2) do |config|
 
         node.vm.network "forwarded_port", guest: 80, host: 8080
         node.vm.network "forwarded_port", guest: 443, host: 8443
+        node.vm.network "forwarded_port", guest: 3000, host: 3000
         node.vm.network "forwarded_port", guest: 3306, host: 3306
+        node.vm.network "forwarded_port", guest: 8080, host: 8080
         node.vm.network "forwarded_port", guest: 9000, host: 9000
 
         node.vm.hostname = hostname
@@ -71,14 +73,24 @@ Vagrant.configure(2) do |config|
           }
         end
 
-        node.vm.provision "deploy", type: "ansible_local" do |ansible|
-          ansible.playbook = "deploy.yml"
+        node.vm.provision "monitoring", type: "ansible_local" do |ansible|
+          ansible.playbook = "monitoring.yml"
           ansible.install_mode = $ansible_install_mode
           ansible.version = $ansible_version
           ansible.compatibility_mode = $compatibility_mode
           ansible.extra_vars = {
             ip_range: $ip_range
           }
+        end
+
+          node.vm.provision "deploy", type: "ansible_local" do |ansible|
+            ansible.playbook = "deploy.yml"
+            ansible.install_mode = $ansible_install_mode
+            ansible.version = $ansible_version
+            ansible.compatibility_mode = $compatibility_mode
+            ansible.extra_vars = {
+              ip_range: $ip_range
+            }
         end
     end
   end

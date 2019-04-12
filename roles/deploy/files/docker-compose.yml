@@ -23,10 +23,10 @@ services:
       resources:
         reservations:
           cpus: '0.25'
-          memory: 128M
+          memory: 256M
         limits:
           cpus: '0.50'
-          memory: 256M
+          memory: 512M
       restart_policy:
         condition: on-failure
         delay: 5s
@@ -49,10 +49,10 @@ services:
       resources:
         reservations:
           cpus: '.25'
-          memory: 128M
+          memory: 256M
         limits:
           cpus: '0.50'
-          memory: 256M
+          memory: 512M
       restart_policy:
         condition: on-failure
         delay: 5s
