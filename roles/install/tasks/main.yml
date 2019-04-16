@@ -47,5 +47,5 @@
 
   - name: Install Python Requirements
     pip:
-      name: ['docker', 'docker-compose']
+      name: ['docker', 'docker-compose', 'jsondiff']
       state: present

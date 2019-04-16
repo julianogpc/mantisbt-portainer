@@ -33,21 +33,6 @@
       daemon_reload: yes
       name: docker
 
-  - name: Portainer Container
-    docker_container:
-      name: portainer
-      image: portainer/portainer
-      hostname: portainer
-      state: started
-      recreate: "no"
-      restart_policy: always
-      pull: "no"
-      ports:
-        - "9000:9000"
-      volumes:
-        - "portainer_data:/data"
-        - "/var/run/docker.sock:/var/run/docker.sock"
-
   - name: Set public_ip from ip_range
     set_fact:
       public_ip: "{{ ansible_all_ipv4_addresses | select('match', ip_range) | list | first }}"
@@ -57,3 +42,41 @@
     docker_swarm:
       state: present
       advertise_addr: "{{ public_ip }}"
+
+  - name: Deploy portainer Stack
+    docker_stack:
+      state: present
+      name: portainer
+      compose:
+      - version: '3.2'
+        services:
+          portainer:
+            image: 'portainer/portainer'
+            hostname: portainer
+            networks:
+              - portainer_agent
+            ports:
+              - '9000:9000'
+            volumes:
+              - 'portainer_data:/data'
+              - '/var/run/docker.sock:/var/run/docker.sock'
+            deploy:
+              resources:
+                reservations:
+                  cpus: '.125'
+                  memory: 128M
+                limits:
+                  cpus: '0.250'
+                  memory: 256M
+              restart_policy:
+                condition: on-failure
+                delay: 5s
+                max_attempts: 3
+                window: 120s
+        volumes:
+          portainer_data:
+            driver: local
+        networks:
+          portainer_agent:
+            driver: overlay
+            attachable: true

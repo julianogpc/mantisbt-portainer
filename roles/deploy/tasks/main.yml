@@ -1,16 +1,70 @@
 ---
-  - name: Copy docker-compose.yml
-    copy:
-      src: docker-compose.yml
-      dest: /tmp/docker-compose.yml
-      owner: vagrant
-      group: vagrant
-      mode: 0644
-
-  - name: Deploy 'docker-compose.yml' Stack
-    shell: docker stack deploy --compose-file=/tmp/docker-compose.yml desafiobase2
-
-  - name: Delete file /tmp/docker-compose.yml
-    file:
-      path: /tmp/docker-compose.yml
-      state: absent
+  - name: Deploy desafiobase2 Stack
+    docker_stack:
+      state: present
+      name: desafiobase2
+      compose:
+      - version: '3'
+        services:
+          mariadb:
+            image: 'bitnami/mariadb:latest'
+            hostname: mariadb
+            environment:
+              - MARIADB_USER={{ mariadb_user }}
+              - MARIADB_PASSWORD={{ mariadb_password }}
+              - MARIADB_DATABASE={{ mariadb_database }}
+              - MARIADB_ROOT_USER={{ mariadb_root_user }}
+              - MARIADB_ROOT_PASSWORD={{ mariadb_root_password }}
+              - ALLOW_EMPTY_PASSWORD=no
+            ports:
+              - '3306:3306'
+            volumes:
+              - 'mariadb_data:/bitnami'
+            healthcheck:
+              test: ["CMD", "mysqladmin", "-u", "$MARIADB_ROOT_USER", "-p$MARIADB_ROOT_PASSWORD", "ping"]
+              interval: 1m30s
+              timeout: 10s
+              retries: 3
+            deploy:
+              resources:
+                reservations:
+                  cpus: '0.25'
+                  memory: 256M
+                limits:
+                  cpus: '1.0'
+                  memory: 512M
+              restart_policy:
+                condition: on-failure
+                delay: 5s
+                max_attempts: 3
+                window: 120s
+          mantisbt:
+            image: 'registry.gitlab.com/julianogpc/mantisbt-portainer:2.19'
+            hostname: mantisbt
+            ports:
+              - '80:80'
+            volumes:
+              - 'mantisbt_data:/var/www/html'
+            healthcheck:
+              test: ["CMD", "curl", "-f", "http://localhost"]
+              interval: 1m30s
+              timeout: 10s
+              retries: 3
+            deploy:
+              resources:
+                reservations:
+                  cpus: '.25'
+                  memory: 256M
+                limits:
+                  cpus: '1.0'
+                  memory: 512M
+              restart_policy:
+                condition: on-failure
+                delay: 5s
+                max_attempts: 3
+                window: 120s
+        volumes:
+          mariadb_data:
+            driver: local
+          mantisbt_data:
+            driver: local
