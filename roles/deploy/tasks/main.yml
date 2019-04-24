@@ -27,9 +27,9 @@
               retries: 3
             deploy:
               resources:
-                reservations:
-                  cpus: '0.25'
-                  memory: 256M
+                # reservations:
+                #   cpus: '0.25'
+                #   memory: 256M
                 limits:
                   cpus: '1.0'
                   memory: 512M
@@ -52,9 +52,9 @@
               retries: 3
             deploy:
               resources:
-                reservations:
-                  cpus: '.25'
-                  memory: 256M
+                # reservations:
+                #   cpus: '.25'
+                #   memory: 256M
                 limits:
                   cpus: '1.0'
                   memory: 512M

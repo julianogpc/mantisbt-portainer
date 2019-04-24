@@ -2,7 +2,7 @@
 # vi: set ft=ruby :
 
 $number_of_nodes = 1
-$vm_mem = "2048"
+$vm_mem = "4096"
 $vb_gui = false
 $ansible_install_mode = "pip"
 $ansible_version = "2.8.0b1"
@@ -46,6 +46,7 @@ Vagrant.configure(2) do |config|
         node.vm.network "forwarded_port", guest: 443, host: 8443
         node.vm.network "forwarded_port", guest: 3000, host: 3000
         node.vm.network "forwarded_port", guest: 3306, host: 3306
+        node.vm.network "forwarded_port", guest: 5601, host: 5601
         node.vm.network "forwarded_port", guest: 8080, host: 8080
         node.vm.network "forwarded_port", guest: 9000, host: 9000
 
@@ -73,17 +74,18 @@ Vagrant.configure(2) do |config|
           }
         end
 
-        node.vm.provision "monitoring", type: "ansible_local" do |ansible|
+        node.vm.provision "monitoring", type: "ansible_local", run: "never" do |ansible|
           ansible.playbook = "monitoring.yml"
           ansible.install_mode = $ansible_install_mode
           ansible.version = $ansible_version
           ansible.compatibility_mode = $compatibility_mode
           ansible.extra_vars = {
-            ip_range: $ip_range
+            ip_range: $ip_range,
+            monitoring: "elk"
           }
         end
 
-          node.vm.provision "deploy", type: "ansible_local" do |ansible|
+          node.vm.provision "deploy", type: "ansible_local", run: "never" do |ansible|
             ansible.playbook = "deploy.yml"
             ansible.install_mode = $ansible_install_mode
             ansible.version = $ansible_version

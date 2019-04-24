@@ -1,0 +1,15 @@
+---
+  - name: Find Docker Images
+    find:
+      paths: "{{ role_path }}/files/docker-images"
+    register: docker_images_result
+
+  - name: Import Docker Images
+    block:
+      - name: Import Docker Images
+        shell: docker load < {{ item.path }}
+        with_items:
+        - "{{ docker_images_result.files }}"
+    when: docker_images_result.matched > 0
+    
+

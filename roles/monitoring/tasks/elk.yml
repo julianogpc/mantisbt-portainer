@@ -1,0 +1,79 @@
+---
+
+  - name: Set Virtual memory
+    shell: sysctl -w vm.max_map_count=262144
+
+  - name: Set Virtual Memory Permanently
+    blockinfile:
+      dest: /etc/sysctl.conf
+      block: |
+        vm.max_map_count=262144
+
+  - name: Deploy monitoring Stack
+    docker_stack:
+      state: present
+      name: monitoring
+      compose:
+      - version: '3.2'
+        services:
+          elk:
+            image: 'sebp/elk'
+            hostname: elk
+            ports:
+              - '5601:5601'
+              - '9200:9200'
+              - '5400:5400'
+            networks:
+              - elk
+            # healthcheck:
+            #   test: ["CMD", "curl", "--fail", "http://localhost:5601/ || exit 1"]
+            #   interval: 1m30s
+            #   timeout: 10s
+            #   retries: 3
+            # deploy:
+            #   resources:
+            #     reservations:
+            #       cpus: '.5'
+            #       memory: 1024M
+            #     limits:
+            #       cpus: '1.0'
+            #       memory: 3092M
+            #   restart_policy:
+            #     condition: on-failure
+            #     delay: 5s
+            #     max_attempts: 3
+            #     window: 120s
+        networks:
+          elk:
+            driver: overlay
+            attachable: true
+
+  - name: Install Agent
+    shell: |
+      curl -L -O https://artifacts.elastic.co/downloads/beats/metricbeat/metricbeat-7.0.0-amd64.deb
+      dpkg -i metricbeat-7.0.0-amd64.deb
+      metricbeat modules enable system
+      metricbeat modules enable docker
+
+  - name: Configure Docker Monitoring
+    replace:
+      path: /etc/metricbeat/modules.d/docker.yml
+      regexp: '^  #(.*)$'
+      replace: '  \1'
+    with_items:
+    - "#metricsets:"
+    - "#  - container"
+    - "#  - cpu"
+    - "#  - diskio"
+    - "#  - event"
+    - "#  - healthcheck"
+    - "#  - info"
+    - "#  - memory"
+    - "#  - network"
+    tags: test
+
+  - name: Enable Service
+    shell: |
+      metricbeat setup
+      systemctl enable metricbeat
+      service metricbeat status

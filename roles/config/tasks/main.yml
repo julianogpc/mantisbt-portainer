@@ -43,10 +43,13 @@
       state: present
       advertise_addr: "{{ public_ip }}"
 
+  - name: Import Docker Images
+    import_tasks: import-docker-images.yml
+
   - name: Deploy portainer Stack
     docker_stack:
       state: present
-      name: portainer
+      name: management
       compose:
       - version: '3.2'
         services:

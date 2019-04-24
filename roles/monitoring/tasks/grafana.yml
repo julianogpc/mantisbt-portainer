@@ -1,0 +1,137 @@
+---
+  - name: Copy file prometheus.yml
+    copy: 
+      src: prometheus.yml
+      dest: /root/prometheus.yml
+      owner: nobody
+      group: nogroup
+      mode: 0644
+
+  - name: Deploy monitoring Stack
+    docker_stack:
+      state: present
+      name: monitoring
+      compose:
+      - version: '3.2'
+        services:
+          cadvisor:
+            image: 'google/cadvisor'
+            hostname: cadvisor
+            volumes:
+              - /:/rootfs:ro
+              - /var/run:/var/run:ro
+              - /sys:/sys:ro
+              - /var/lib/docker/:/var/lib/docker:ro
+              - /dev/disk/:/dev/disk:ro
+            ports:
+              - '8080:8080'
+            networks:
+              - monitoring
+            userns_mode: host
+            healthcheck:
+              test: ["CMD", "wget", "--quiet","--tries=1" , "--spider", "http://localhost:8080/ || exit 1"]
+              interval: 1m30s
+              timeout: 10s
+              retries: 3
+            deploy:
+              resources:
+                reservations:
+                  cpus: '.125'
+                  memory: 128M
+                limits:
+                  cpus: '0.250'
+                  memory: 256M
+              restart_policy:
+                condition: on-failure
+                delay: 5s
+                max_attempts: 3
+                window: 120s
+          node-exporter:
+            image: 'prom/node-exporter:latest'
+            hostname: node-exporter
+            volumes:
+              - /:/rootfs:ro
+              - /var/run:/var/run:ro
+              - /sys:/sys:ro
+              - /var/lib/docker/:/var/lib/docker:ro
+              - /dev/disk/:/dev/disk:ro
+            networks:
+              - monitoring
+            deploy:
+              resources:
+                reservations:
+                  cpus: '.125'
+                  memory: 32M
+                limits:
+                  cpus: '0.250'
+                  memory: 64M
+              restart_policy:
+                condition: on-failure
+                delay: 5s
+                max_attempts: 3
+                window: 120s
+          prometheus:
+            image: 'prom/prometheus:latest'
+            hostname: prometheus
+            volumes:
+              - prometheus_config:/etc/prometheus/
+              - prometheus_data:/prometheus
+              - /root/prometheus.yml:/etc/prometheus/prometheus.yml
+            networks:
+              - monitoring
+            command: >
+              --config.file=/etc/prometheus/prometheus.yml
+            deploy:
+              resources:
+                reservations:
+                  cpus: '.125'
+                  memory: 128M
+                limits:
+                  cpus: '0.250'
+                  memory: 256M
+              restart_policy:
+                condition: on-failure
+                delay: 5s
+                max_attempts: 3
+                window: 120s
+          grafana:
+            image: 'grafana/grafana'
+            hostname: grafana
+            environment:
+              GF_SECURITY_ADMIN_PASSWORD: '{{ gf_security_admin_password }}'
+              GF_USERS_ALLOW_SIGN_UP: '{{ gf_users_allow_sign_up }}'
+            volumes:
+              - 'grafana_data:/var/lib/grafana'
+            ports:
+              - '3000:3000'
+            networks:
+              - monitoring
+            healthcheck:
+              test: ["CMD", "curl", "-f", "http://localhost:3000"]
+              interval: 1m30s
+              timeout: 10s
+              retries: 3
+            deploy:
+              resources:
+                reservations:
+                  cpus: '.125'
+                  memory: 128M
+                limits:
+                  cpus: '0.250'
+                  memory: 256M
+              restart_policy:
+                condition: on-failure
+                delay: 5s
+                max_attempts: 3
+                window: 120s
+        volumes:
+          prometheus_config:
+            driver: local
+          prometheus_data:
+            driver: local
+          grafana_data:
+            driver: local
+        networks:
+          monitoring:
+            driver: overlay
+            attachable: true
